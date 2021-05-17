@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import queryString from 'query-string';
 import ChangeColor from './components/ChangeColor';
+import Pagination from './components/Pagination';
 import PostList from './components/PostList';
 import TodoForm from './components/TodoForm';
 import TodoList from './components/TodoList';
+import PostFilterForm from './components/PostFilterForm';
 
 function App() {
   const [todoList, setTodoList] = useState([
@@ -12,7 +15,15 @@ function App() {
   ]);
   const [newTodo, setNewTodo] = useState("");
   const [postTodo, setPostTodo] = useState([]);
-
+  const [pagination, setPaginaltion] = useState({
+    _page: 1,
+    _limit: 10,
+    _totalRow: 1,
+  })
+  const [filters, setFilters] = useState({
+    _limit: 10,
+    _page: 1,
+  })
 
   // xóa todo vừa click   
   const handleTodoClick = (todo) => {
@@ -23,7 +34,13 @@ function App() {
     newTodoList.splice(index, 1);
     setTodoList(newTodoList);
   }
-
+  //
+  const handlePageChange = (newPage) => {
+    console.log("New page: ", newPage);
+    setFilters({
+      ...filters, _page: newPage
+    })
+  }
   //
   const handleChange = (e) => {
     setNewTodo(e.target.value)
@@ -40,18 +57,26 @@ function App() {
     //..goi api
     const getApi = async () => {
       try {
-        const Url = "http://js-post-api.herokuapp.com/api/posts?_limit=10&_page=1";
+        const paramsString = queryString.stringify(filters);
+        const Url = `http://js-post-api.herokuapp.com/api/posts?${paramsString}`;
         const response = await fetch(Url);
         const responseJson = await response.json();
-        const { data } = responseJson;
+        const { data, pagination } = responseJson;
         setPostTodo(data);
+        setPaginaltion(pagination)
       } catch (error) {
         console.log("failed to fetch post list:", error.message);
       }
     }
     getApi();
-  })
+  }, [filters])
 
+  const handleFilterSForm = (formValue) => {
+    console.log(formValue);
+    setFilters({
+      filters, _page: 1, title_like: formValue
+    })
+  }
   return (
     <div className="App">
       <div>
@@ -64,8 +89,10 @@ function App() {
         <TodoList todos={todoList} onTodoClick={handleTodoClick} />
       </div>
       <div>
-        <h1>vi du 3: su dung useEffect de goi post list</h1>
+        <h1>vi du 3 + 4: su dung useEffect de goi post list phan trang</h1>
+        <PostFilterForm onSubmit={handleFilterSForm} />
         <PostList posts={postTodo} />
+        <Pagination pagination={pagination} onPageChange={handlePageChange} />
       </div>
     </div>
   );
